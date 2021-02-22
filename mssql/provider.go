@@ -21,7 +21,9 @@ func Provider() *schema.Provider {
 				Required: true,
 			},
 		},
-		ResourcesMap:         map[string]*schema.Resource{},
+		ResourcesMap: map[string]*schema.Resource{
+			"mssql_login": resourceLogin(),
+		},
 		DataSourcesMap:       map[string]*schema.Resource{},
 		ConfigureContextFunc: providerConfigure,
 	}
@@ -30,12 +32,16 @@ func Provider() *schema.Provider {
 var MssqlClient sqlcmd.ISqlCommand
 
 func providerConfigure(ctx context.Context, d *schema.ResourceData) (interface{}, diag.Diagnostics) {
-	var diags diag.Diagnostics
-	connection_string := d.Get("connection_string").(string)
 
-	err := MssqlClient.Init(connection_string)
+	MssqlClient = &sqlcmd.SqlCommand{}
+
+	var diags diag.Diagnostics
+	connectionString := d.Get("connection_string").(string)
+
+	err := MssqlClient.Init(connectionString)
 
 	if err != nil {
+
 		return nil, diag.FromErr(err)
 	}
 

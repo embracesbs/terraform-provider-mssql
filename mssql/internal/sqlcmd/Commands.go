@@ -10,14 +10,17 @@ type ISqlCommand interface {
 
 	Execute(command string, args ...interface{}) error
 	Query(query string, scanner func(*sql.Rows) error, args ...interface{}) (*sql.Rows, error)
+	Test() string
 }
 
 type SqlCommand struct {
-	sqlClient *sql.DB
+	sqlClient  *sql.DB
+	connection string
 }
 
 func (c *SqlCommand) Init(connectionString string) error {
 	var err error
+	c.connection = connectionString
 	c.sqlClient, err = sql.Open("sqlserver", connectionString)
 	if err != nil {
 		return err
@@ -52,4 +55,8 @@ func (c *SqlCommand) Query(query string, scanner func(*sql.Rows) error, args ...
 	}
 
 	return rows, nil
+}
+
+func (c *SqlCommand) Test() string {
+	return c.connection
 }

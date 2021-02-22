@@ -1,20 +1,17 @@
 terraform {
   required_providers {
-    hashicups = {
-      version = "0.2"
-      source  = "hashicorp.com/edu/hashicups"
+    mssql = {
+      source = "terraform.embracecloud.nl/embracecloud/mssql"
     }
   }
 }
 
-provider "hashicups" {}
 
-module "psl" {
-  source = "./coffee"
-
-  coffee_name = "Packer Spiced Latte"
+provider "mssql" {
+  connection_string = "localhost:44444333"
 }
 
-output "psl" {
-  value = module.psl.coffee
+resource "mssql_login" "name" {
+  name = "test"
+  password = "test"
 }
