@@ -16,13 +16,23 @@ import (
 func Provider() *schema.Provider {
 	return &schema.Provider{
 		Schema: map[string]*schema.Schema{
-			"connection_string": &schema.Schema{
+			"user_name": &schema.Schema{
+				Type:     schema.TypeString,
+				Required: true,
+			},
+			"password": &schema.Schema{
+				Type:     schema.TypeString,
+				Required: true,
+			},
+			"url": &schema.Schema{
 				Type:     schema.TypeString,
 				Required: true,
 			},
 		},
 		ResourcesMap: map[string]*schema.Resource{
-			"mssql_login": resourceLogin(),
+			"mssql_login":       resourceLogin(),
+			"mssql_user":        resourceUser(),
+			"mssql_rolemapping": resourceRoleMapping(),
 		},
 		DataSourcesMap:       map[string]*schema.Resource{},
 		ConfigureContextFunc: providerConfigure,
@@ -36,9 +46,11 @@ func providerConfigure(ctx context.Context, d *schema.ResourceData) (interface{}
 	MssqlClient = &sqlcmd.SqlCommand{}
 
 	var diags diag.Diagnostics
-	connectionString := d.Get("connection_string").(string)
+	user := d.Get("user_name").(string)
+	password := d.Get("password").(string)
+	url := d.Get("url").(string)
 
-	err := MssqlClient.Init(connectionString)
+	err := MssqlClient.Init(user, password, url)
 
 	if err != nil {
 

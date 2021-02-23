@@ -1,9 +1,9 @@
-# Terraform Provider Hashicups
+# Terraform Provider MSSQL
 
 Run the following command to build the provider
 
 ```shell
-go build -o terraform-provider-hashicups
+go build -o terraform-provider-mssql
 ```
 
 ## Test sample configuration
@@ -11,11 +11,9 @@ go build -o terraform-provider-hashicups
 First, build and install the provider.
 
 ```shell
-make install
+make local-install
 ```
 
-Then, run the following command to initialize the workspace and apply the sample configuration.
+This will create the provider binary. Copy that binary into the location that Terraform will try to find it. Depending on the OS, version and Terraform version this could differ.
 
-```shell
-terraform init && terraform apply
-```
+## [Contributing](docs/contributing.md) 
