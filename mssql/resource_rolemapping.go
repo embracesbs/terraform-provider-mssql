@@ -9,13 +9,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-type Rolemapping struct {
-	name         string
-	principal_id int
-	sid          string
-	type_desc    string
-}
-
 func resourceRoleMapping() *schema.Resource {
 	return &schema.Resource{
 		ReadContext:   resourceRoleMappingRead,
