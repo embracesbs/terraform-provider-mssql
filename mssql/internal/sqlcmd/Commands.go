@@ -18,6 +18,12 @@ const Sqlserver2005 int = 9
 type ISqlCommand interface {
 	Init(username string, password string, url string) error
 
+	GetDatabase(id string, where string) (*Database, error)
+	CreateDatabase(name string, collation string, recoveryMode string) (*Database, error)
+	DeleteDatabase(name string) error
+
+	SetRecoveryMode(name string, mode string) error
+
 	UseDefault() error
 
 	Execute(command string, args ...interface{}) error
