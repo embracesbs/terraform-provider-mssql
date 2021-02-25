@@ -3,7 +3,17 @@ package sqlcmd
 import (
 	"context"
 	"database/sql"
+	"strconv"
+	"strings"
 )
+
+const SqlServer2019 int = 15
+const SqlServer2017 int = 14
+const SqlServer2016 int = 13
+const SqlServer2014 int = 12
+const SqlServer2012 int = 11
+const SqlServer2008 int = 10
+const Sqlserver2005 int = 9
 
 type ISqlCommand interface {
 	Init(username string, password string, url string) error
@@ -12,14 +22,22 @@ type ISqlCommand interface {
 
 	Execute(command string, args ...interface{}) error
 	Query(query string, args ...interface{}) (*sql.Rows, error)
+	GetVersion() int
 }
 
 type SqlCommand struct {
-	sqlClient  *sql.DB
-	userName   string
-	password   string
-	url        string
-	connection string
+	sqlClient   *sql.DB
+	userName    string
+	password    string
+	url         string
+	connection  string
+	mainVersion int
+	version     string
+	edition     string
+}
+
+func (c *SqlCommand) GetVersion() int {
+	return c.mainVersion
 }
 
 func (c *SqlCommand) Init(username string, password string, url string) error {
@@ -35,6 +53,9 @@ func (c *SqlCommand) Init(username string, password string, url string) error {
 	if err != nil {
 		return err
 	}
+
+	c.SetEdition()
+
 	return nil
 }
 
@@ -76,4 +97,16 @@ func (c *SqlCommand) Query(query string, args ...interface{}) (*sql.Rows, error)
 	}
 
 	return rows, nil
+}
+
+func (c *SqlCommand) SetEdition() {
+
+	result, _ := c.Query("SELECT SERVERPROPERTY('productversion') as  'version', SERVERPROPERTY ('edition') as 'edition'")
+
+	for result.Next() {
+		result.Scan(&c.version, &c.edition)
+	}
+
+	c.mainVersion, _ = strconv.Atoi(strings.Split(c.version, ".")[0])
+
 }
