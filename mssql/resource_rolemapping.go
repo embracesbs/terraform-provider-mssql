@@ -49,9 +49,15 @@ func resourceRoleMappingCreate(ctx context.Context, data *schema.ResourceData, m
 	database := data.Get("database")
 	role := data.Get("role")
 
-	cmd := "ALTER ROLE [" + role.(string) + "] ADD MEMBER " + user.(string) + ""
-
 	client := meta.(*sqlcmd.SqlCommand)
+
+	var cmd string
+
+	if client.GetVersion() >= sqlcmd.SqlServer2012 {
+		cmd = "ALTER ROLE [" + role.(string) + "] ADD MEMBER " + user.(string) + ""
+	} else {
+		cmd = "EXEC sp_addrolemember N'" + role.(string) + "', N'" + user.(string) + "'"
+	}
 
 	client.UseDb(database.(string))
 
@@ -74,9 +80,14 @@ func resourceRoleMappingDelete(ctx context.Context, data *schema.ResourceData, m
 	database := data.Get("database")
 	role := data.Get("role")
 
-	cmd := "ALTER ROLE [" + role.(string) + "] DROP MEMBER " + user.(string) + ""
-
 	client := meta.(*sqlcmd.SqlCommand)
+	var cmd string
+
+	if client.GetVersion() >= sqlcmd.SqlServer2012 {
+		cmd = "ALTER ROLE [" + role.(string) + "] DROP MEMBER " + user.(string) + ""
+	} else {
+		cmd = "EXEC sp_droprolemember N'" + role.(string) + "', N'" + user.(string) + "'"
+	}
 
 	client.UseDb(database.(string))
 
