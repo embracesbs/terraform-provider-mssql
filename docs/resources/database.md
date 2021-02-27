@@ -32,7 +32,12 @@ resource "mssql_database" "example" {
 ### Optional
 
 - **collation** (String)
-- **id** (String) The ID of this resource.
 - **recovery_mode** (String)
+
+### Read-Only
+
+- **id** (String) The ID of this resource.
+- **is_read_only** (Boolean)
+- **owner_sid** (String)
 
 

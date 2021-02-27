@@ -1,5 +1,7 @@
 package sqlcmd
 
+import "fmt"
+
 type Database struct {
 	Id                 int
 	Name               string
@@ -11,13 +13,13 @@ type Database struct {
 	FullTextEnabled    string
 }
 
-func (c *SqlCommand) GetDatabase(id string, where string) (*Database, error) {
+func (sqlClient *SqlCommand) GetDatabase(id string, where string) (*Database, error) {
 
 	database := &Database{}
 
-	c.UseDefault()
+	sqlClient.UseDefault()
 
-	result, err := c.Query("select name,database_id,owner_sid,compatibility_level,collation_name,is_read_only,recovery_model_desc,is_fulltext_enabled FROM sys.databases WHERE " + where + " = '" + id + "'")
+	result, err := sqlClient.Query(fmt.Sprintf("select name,database_id,owner_sid,compatibility_level,collation_name,is_read_only,recovery_model_desc,is_fulltext_enabled FROM sys.databases WHERE %s = '%s'", where, id))
 
 	if err != nil {
 		return database, err
@@ -34,17 +36,17 @@ func (c *SqlCommand) GetDatabase(id string, where string) (*Database, error) {
 	return database, nil
 }
 
-func (c *SqlCommand) CreateDatabase(name string, collation string, recoveryMode string) (*Database, error) {
+func (sqlClient *SqlCommand) CreateDatabase(name string, collation string, recoveryMode string) (*Database, error) {
 
-	c.UseDefault()
+	sqlClient.UseDefault()
 
-	cmd := "CREATE DATABASE " + name + " COLLATE " + collation + ";"
-	err := c.Execute(cmd)
+	cmd := fmt.Sprintf("CREATE DATABASE %s COLLATE %s;", name, collation)
+	err := sqlClient.Execute(cmd)
 
 	if err == nil {
-		err = c.SetRecoveryMode(name, recoveryMode)
+		err = sqlClient.SetRecoveryMode(name, recoveryMode)
 		if err == nil {
-			database, err := c.GetDatabase(name, "name")
+			database, err := sqlClient.GetDatabase(name, "name")
 			if err == nil {
 				return database, nil
 			}
@@ -54,18 +56,18 @@ func (c *SqlCommand) CreateDatabase(name string, collation string, recoveryMode 
 	return nil, err
 }
 
-func (c *SqlCommand) DeleteDatabase(name string) error {
+func (sqlClient *SqlCommand) DeleteDatabase(name string) error {
 
-	c.UseDefault()
-	err := c.Execute("DROP DATABASE " + name + ";")
+	sqlClient.UseDefault()
+	err := sqlClient.Execute(fmt.Sprintf("DROP DATABASE %s;", name))
 
 	return err
 }
 
-func (c *SqlCommand) SetRecoveryMode(name string, mode string) error {
+func (sqlClient *SqlCommand) SetRecoveryMode(name string, mode string) error {
 
-	c.UseDefault()
-	err := c.Execute("ALTER DATABASE " + name + " SET RECOVERY " + mode + "")
+	sqlClient.UseDefault()
+	err := sqlClient.Execute(fmt.Sprintf("ALTER DATABASE %s SET RECOVERY %s", name, mode))
 
 	return err
 }
