@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"strconv"
 
 	"github.com/embracesbs/terraform-provider-mssql/mssql/internal/sqlcmd"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -17,6 +18,10 @@ func resourceDatabase() *schema.Resource {
 		UpdateContext: resourceDatabaseUpdate,
 		DeleteContext: resourceDatabaseDelete,
 		Schema: map[string]*schema.Schema{
+			"id": &schema.Schema{
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 			"name": &schema.Schema{
 				Type:     schema.TypeString,
 				Required: true,
@@ -34,6 +39,14 @@ func resourceDatabase() *schema.Resource {
 				Default:      "SIMPLE",
 				ValidateFunc: validateRecoveryModel,
 			},
+			"owner_sid": &schema.Schema{
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"is_read_only": &schema.Schema{
+				Type:     schema.TypeBool,
+				Computed: true,
+			},
 		},
 	}
 }
@@ -42,6 +55,22 @@ func resourceDatabaseRead(ctx context.Context, data *schema.ResourceData, meta i
 
 	var diags diag.Diagnostics
 
+	id := data.Get("id").(string)
+
+	client := meta.(*sqlcmd.SqlCommand)
+
+	database, err := client.GetDatabase(id, "database_id")
+
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	data.Set("name", database.Name)
+	data.Set("collation", database.Collation_name)
+	data.Set("recovery_mode", database.RecoveryModel)
+	data.Set("owner_sid", database.Ownersid)
+	data.Set("is_read_only", database.IsReadOnly)
+
 	return diags
 }
 
@@ -49,23 +78,23 @@ func resourceDatabaseCreate(ctx context.Context, data *schema.ResourceData, meta
 
 	var diags diag.Diagnostics
 
-	database := data.Get("name")
-	collation := data.Get("collation")
-	recovery := data.Get("recovery_mode")
-
-	cmd := "CREATE DATABASE " + database.(string) + " COLLATE " + collation.(string) + "; ALTER DATABASE " + database.(string) + " SET RECOVERY " + recovery.(string) + ""
+	name := data.Get("name").(string)
+	collation := data.Get("collation").(string)
+	recovery := data.Get("recovery_mode").(string)
 
 	client := meta.(*sqlcmd.SqlCommand)
 
-	client.UseDefault()
-
-	err := client.Execute(cmd)
+	db, err := client.CreateDatabase(name, collation, recovery)
 
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	data.SetId(database.(string))
+	data.SetId(strconv.Itoa(db.Id))
+	data.Set("collation", db.Collation_name)
+	data.Set("recovery_mode", db.RecoveryModel)
+	data.Set("owner_sid", db.Ownersid)
+	data.Set("is_read_only", db.IsReadOnly)
 
 	return diags
 }
@@ -76,14 +105,12 @@ func resourceDatabaseUpdate(ctx context.Context, data *schema.ResourceData, meta
 
 	if data.HasChange("recovery_mode") {
 
-		recovery := data.Get("recovery_mode")
-		database := data.Get("name")
+		recovery := data.Get("recovery_mode").(string)
+		database := data.Get("name").(string)
 
 		client := meta.(*sqlcmd.SqlCommand)
 
-		client.UseDefault()
-
-		err := client.Execute("ALTER DATABASE " + database.(string) + " SET RECOVERY " + recovery.(string) + "")
+		err := client.SetRecoveryMode(database, recovery)
 
 		if err != nil {
 			return diag.FromErr(err)
@@ -99,15 +126,11 @@ func resourceDatabaseDelete(ctx context.Context, data *schema.ResourceData, meta
 
 	var diags diag.Diagnostics
 
-	database := data.Get("name")
-
-	cmd := "DROP DATABASE " + database.(string) + ";"
+	name := data.Get("name").(string)
 
 	client := meta.(*sqlcmd.SqlCommand)
 
-	client.UseDefault()
-
-	err := client.Execute(cmd)
+	err := client.DeleteDatabase(name)
 
 	if err != nil {
 		return diag.FromErr(err)
