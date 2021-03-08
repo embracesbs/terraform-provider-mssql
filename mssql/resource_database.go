@@ -65,11 +65,7 @@ func resourceDatabaseRead(ctx context.Context, data *schema.ResourceData, meta i
 		return diag.FromErr(err)
 	}
 
-	data.Set("name", database.Name)
-	data.Set("collation", database.Collation_name)
-	data.Set("recovery_mode", database.RecoveryModel)
-	data.Set("owner_sid", database.Ownersid)
-	data.Set("is_read_only", database.IsReadOnly)
+	updateDatabaseState(data, database)
 
 	return diags
 }
@@ -91,10 +87,8 @@ func resourceDatabaseCreate(ctx context.Context, data *schema.ResourceData, meta
 	}
 
 	data.SetId(strconv.Itoa(db.Id))
-	data.Set("collation", db.Collation_name)
-	data.Set("recovery_mode", db.RecoveryModel)
-	data.Set("owner_sid", db.Ownersid)
-	data.Set("is_read_only", db.IsReadOnly)
+
+	updateDatabaseState(data, db)
 
 	return diags
 }
@@ -103,12 +97,14 @@ func resourceDatabaseUpdate(ctx context.Context, data *schema.ResourceData, meta
 
 	var diags diag.Diagnostics
 
+	id := data.Get("id").(string)
+
+	client := meta.(*sqlcmd.SqlCommand)
+
 	if data.HasChange("recovery_mode") {
 
 		recovery := data.Get("recovery_mode").(string)
 		database := data.Get("name").(string)
-
-		client := meta.(*sqlcmd.SqlCommand)
 
 		err := client.SetRecoveryMode(database, recovery)
 
@@ -117,6 +113,14 @@ func resourceDatabaseUpdate(ctx context.Context, data *schema.ResourceData, meta
 		}
 
 	}
+
+	db, err := client.GetDatabase(id, "database_id")
+
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	updateDatabaseState(data, db)
 
 	return diags
 
@@ -152,5 +156,15 @@ func validateRecoveryModel(v interface{}, k string) (ws []string, errors []error
 	}
 
 	return ws, errors
+
+}
+
+func updateDatabaseState(data *schema.ResourceData, database *sqlcmd.Database) {
+
+	data.Set("name", database.Name)
+	data.Set("collation", database.Collation_name)
+	data.Set("recovery_mode", database.RecoveryModel)
+	data.Set("owner_sid", database.Ownersid)
+	data.Set("is_read_only", database.IsReadOnly)
 
 }
