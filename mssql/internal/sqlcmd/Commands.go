@@ -60,19 +60,17 @@ func (c *SqlCommand) Init(username string, password string, url string) error {
 		return err
 	}
 
-	c.SetEdition()
+	err = c.SetEdition()
 
-	return nil
+	return err
 }
 
 func (c *SqlCommand) UseDefault() error {
 	var err error
 
 	c.sqlClient, err = sql.Open("sqlserver", c.connection)
-	if err != nil {
-		return err
-	}
-	return nil
+
+	return err
 }
 
 func (c *SqlCommand) UseDb(databaseName string) error {
@@ -80,10 +78,8 @@ func (c *SqlCommand) UseDb(databaseName string) error {
 
 	connectionString := "Server=" + c.url + ";database=" + databaseName + "; Persist Security Info=False;User ID=" + c.userName + ";Password=" + c.password + ";"
 	c.sqlClient, err = sql.Open("sqlserver", connectionString)
-	if err != nil {
-		return err
-	}
-	return nil
+
+	return err
 }
 
 func (c *SqlCommand) Execute(command string, args ...interface{}) error {
@@ -105,14 +101,17 @@ func (c *SqlCommand) Query(query string, args ...interface{}) (*sql.Rows, error)
 	return rows, nil
 }
 
-func (c *SqlCommand) SetEdition() {
+func (c *SqlCommand) SetEdition() error {
 
-	result, _ := c.Query("SELECT SERVERPROPERTY('productversion') as  'version', SERVERPROPERTY ('edition') as 'edition'")
+	result, err := c.Query("SELECT SERVERPROPERTY('productversion') as  'version', SERVERPROPERTY ('edition') as 'edition'")
+	if err != nil {
+		return err
+	}
 
 	for result.Next() {
 		result.Scan(&c.version, &c.edition)
 	}
 
 	c.mainVersion, _ = strconv.Atoi(strings.Split(c.version, ".")[0])
-
+	return nil
 }
